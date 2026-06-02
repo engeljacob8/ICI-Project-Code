@@ -10,7 +10,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from scipy.special import i0
 from scipy.optimize import minimize
-from sympy.printing.pretty.pretty_symbology import line_width
+
 
 # open fits file
 file_name = 'data/AS209.nsc.robust_0.5.image.fits'
@@ -161,11 +161,12 @@ def cont_plot_p():
                           levels=[3 * noise_I, 10 * noise_I, 25 * noise_I, 50 * noise_I, 100 * noise_I, 200 * noise_I,
                                   325 * noise_I, 500 * noise_I, 1000 * noise_I])
     ax.clabel(contours, inline=1, fontsize=10)
+    ax.xaxis.set_inverted(True)
 
     cbar = plt.colorbar(im)
     cbar.set_label('P [Jy/beam]')
 
-    plt.xlim(-3, 3)
+    plt.xlim(3,-3)
     plt.ylim(-3, 3)
     plt.show()
 
