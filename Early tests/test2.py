@@ -10,7 +10,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from scipy.special import i0
 from scipy.optimize import minimize
-
+import Cleaned_Plot_Methods.Plot_Functions as pltf
 
 # open fits file
 file_name = 'data/AS209.nsc.robust_0.5.image.fits'
@@ -28,31 +28,31 @@ hdr1 = hdul[1].header
 # Depending on the data, it may or may not include I, Q, U, V
 # data has dimensions of [stokes, frequency, x-axis, y-axis]
 data = hdul[0].data
-
+data1 = hdul[1].data
 
 # Beam info
-bmaj = hdr1['ttype1']  # [arcsec] -- does this need to be changed? I think it's already in arcsec according to data table
-bmin = hdr1['ttype2']  # [arcsec]
-bpa = hdr1['ttype3'] # [deg]
+bmaj = data1[0][0]  # [arcsec] -- does this need to be changed? I think it's already in arcsec according to data table
+bmin = data1[0][1]   # [arcsec]
+bpa = data1[0][2]  # [deg]
 
 # Image Coordinates
-#
+#Q is there a better way to center + change to offset
 nx = hdr['naxis2'] # width of x dimension
 dx = hdr['cdelt2'] * 3600 # [arcsec] --cdelt refers to scale/step size per pixel
 x = (np.arange(nx) - (hdr['crpix2']-1) ) * dx
-dec = (np.arange(nx) - (hdr['crpix2']-1)) * hdr['cdelt2'] * 3600  + hdr['crval2']
-dec= dec + 14.36927778 # center image
+dec = (np.arange(nx) - (hdr['crpix2']-1)) * hdr['cdelt2'] * 3600  #+ hdr['crval2']
+#dec= dec + 14.36927778 # center image/offset
 
 ny = hdr['naxis1']
 dy = hdr['cdelt1'] * 3600 # [arcsec]
 y = (np.arange(ny) - (hdr['crpix1']-1) ) * dy
-ra = (np.arange(ny) - (hdr['crpix1']-1)) * hdr['cdelt1'] * 3600 + hdr['crval1']
-ra = ra - 252.31355833 # center image
+ra = (np.arange(ny) - (hdr['crpix1']-1)) * hdr['cdelt1'] * 3600 #+ hdr['crval1']
+#ra = ra - 252.31355833 # center image/offset
 
 #map coordinates
 extent = [
-    dec.max(), dec.min(),
-    ra.min(), ra.max()
+    ra.max(), ra.min(),
+    dec.min(), dec.max(),
 ]
 
 
@@ -89,7 +89,6 @@ P_m = np.sqrt(Q_arr**2 + U_arr**2)
 P_simple = np.sqrt(np.maximum(Q_arr**2 + U_arr**2 - noise_P**2,0))
 
 #debiased intensity
-
 #P = sp.symbols('P')
 
 #pdf = P/noise_P**2 * j0((P * P_m)/noise_P**2) * np.exp(- (P_m**2 + P**2)/2* noise_P**2)
@@ -128,125 +127,36 @@ pf = np.full_like(I_arr, np.nan)
 
 mask = (
 
-        (I_arr > 3*  noise_I) &
-        (P_simple > 3*  noise_P)
+        (I_arr > 2* noise_I) &
+        (P_simple >2*   noise_P)
     )
 
+#pf = P_simple/I_arr
 pf[mask] = P_simple[mask]/I_arr[mask]
-#pf = np.nan_to_num(pf, nan = 0.0)
 
 
 
-def plot_pf():
-    ax = plt.gca()
-    im = ax.imshow( pf, cmap='viridis', extent = extent)
-    ax.set_xlabel(r'$\Delta$RA (arcsec)')
-    ax.set_ylabel(r'$\Delta$Dec (arcsec)')
-    ax.set_aspect('equal')
+#polarization angle
+pa_arr = .5 * np.arctan2(U_arr, Q_arr) # this angle is east of north
+#cartesian
+Ux =  100*pf *-np.sin(pa_arr)
+Uy =  100*pf * np.cos(pa_arr)
 
-    cbar = plt.colorbar(im)
-    cbar.set_label('Polarization Fraction [%]')
-
-    plt.xlim(-3, 3)
-    plt.ylim(-3, 3)
-    plt.show()
-
-def cont_plot_p():
-    ax = plt.gca()
-    im = ax.contourf( P_simple, cmap='viridis', extent = extent, levels=50)
-    ax.set_xlabel(r'$\Delta$RA (arcsec)')
-    ax.set_ylabel(r'$\Delta$Dec (arcsec)')
-    ax.set_aspect('equal')
-
-    contours = ax.contour(ra, dec, I, colors='white', linewidths=.5, extent=extent,
-                          levels=[3 * noise_I, 10 * noise_I, 25 * noise_I, 50 * noise_I, 100 * noise_I, 200 * noise_I,
-                                  325 * noise_I, 500 * noise_I, 1000 * noise_I])
-    ax.clabel(contours, inline=1, fontsize=10)
-
-    cbar = plt.colorbar(im)
-    cbar.set_label('P [Jy/beam]')
-
-    plt.xlim(3,-3)
-    plt.ylim(-3, 3)
-    plt.show()
-
-def im_plot_p():
-    ax = plt.gca()
-    im = ax.imshow( P_simple,cmap='viridis', extent = extent)
-    ax.set_xlabel(r'$\Delta$RA (arcsec)')
-    ax.set_ylabel(r'$\Delta$Dec (arcsec)')
-    ax.set_aspect('equal')
-
-    contours = ax.contour(I, colors='white', linewidths=.5, extent=extent,
-                          levels=[3 * noise_I, 10 * noise_I, 25 * noise_I, 50 * noise_I, 100 * noise_I, 200 * noise_I,
-                                  325 * noise_I, 500 * noise_I, 1000 * noise_I])
-    ax.clabel(contours, inline=1, fontsize=10)
-
-    cbar = plt.colorbar(im)
-    cbar.set_label('P [Jy/beam]')
-
-    plt.xlim(3,-3)
-    plt.ylim(-3,3)
-    plt.show()
-
-
-def plot_q():
-    ax = plt.gca()
-    im = ax.contourf(ra,dec, Q,cmap='viridis', levels=50, extent = extent)
-    ax.set_xlabel(r'$\Delta$RA (arcsec)')
-    ax.set_ylabel(r'$\Delta$Dec (arcsec)')
-    ax.set_aspect('equal')
-
-    cbar = plt.colorbar(im)
-    cbar.set_label('Stokes Q [Jy/beam]')
-
-    plt.xlim(-3,3)
-    plt.ylim(-3,3)
-    plt.show()
-
-def plot_i():
-    ax = plt.gca()
-    im = ax.contourf(ra, dec,I,cmap='viridis', levels=50, extent = extent)
-    ax.set_xlabel(r'$\Delta$RA (arcsec)')
-    ax.set_ylabel(r'$\Delta$Dec (arcsec)')
-    ax.set_aspect('equal')
-
-    contours = ax.contour(ra, dec, I, colors= 'white', linewidths= 1.5, extent=extent,
-                          levels=[3 * noise_I, 10 * noise_I, 25 * noise_I, 50 * noise_I, 100 * noise_I, 200 * noise_I,
-                                  325 * noise_I, 500 * noise_I, 1000*noise_I])
-    ax.clabel(contours, inline=1, fontsize=10)
-
-    cbar = plt.colorbar(im)
-    cbar.set_label('Stokes I [Jy/beam]')
-
-    plt.xlim(-3,3)
-    plt.ylim(-3,3)
-    plt.show()
-
-
-def plot_u():
-    ax = plt.gca()
-    im = ax.contourf(ra, dec, U, cmap='viridis', levels=50, extent= extent)
-    ax.set_xlabel(r'$\Delta$RA (arcsec)')
-    ax.set_ylabel(r'$\Delta$Dec (arcsec)')
-    ax.set_aspect('equal')
-
-    cbar = plt.colorbar(im)
-    cbar.set_label('Stokes U [Jy/beam]')
-
-    plt.xlim(-3, 3)
-    plt.ylim(-3, 3)
-    plt.show()
 
 
 
 if __name__ == "__main__":
-    plot_i()
-    #plot_q()
-    #plot_u()
-    cont_plot_p()
-    im_plot_p()
-    plot_pf()
+    pltf.plot_i(I,ra,dec, noise_I, bmaj= bmaj, bmin= bmin, bpa= bpa, ux=Ux, uy=Uy)
+
+    #pltf.plot_q(Q, ra, dec, I, noise_I)
+    #
+    #pltf.plot_u(U, ra, dec, I, noise_I, noise_U= noise_U)
+    #
+    # pltf.cont_plot_p(P_simple, I, noise_I, extent, ra, dec)
+    #
+    #pltf.im_plot_p(P_simple,extent ,noise_I, I,bmaj= bmaj, bmin= bmin, bpa= bpa)
+    #
+    pltf.image_plot_pf(pf, extent)
 
 
     hdul.close()

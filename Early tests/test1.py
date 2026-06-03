@@ -31,12 +31,18 @@ for card in (hdr.cards):
 # Depending on the data, it may or may not include I, Q, U, V
 # data has dimensions of [stokes, frequency, x-axis, y-axis]
 data = hdul[0].data
+data1 = hdul[1].data
+print(data1.shape)
+print(data1)
 
-
+print(data1[0][0])
+print(data1[0][1])
+print(data1[0][2])
 # Beam info
 bmaj = hdr1['ttype1']  # [arcsec] -- does this need to be changed? I think it's already in arcsec according to data table
 bmin = hdr1['ttype2']  # [arcsec]
 bpa = hdr1['ttype3'] # [deg]
+print(bmaj)
 
 # Image Coordinates
 nx = hdr['naxis2'] # width of x dimension
@@ -44,6 +50,7 @@ dx = hdr['cdelt2'] * 3600 # [arcsec] --cdelt refers to scale/step size per pixel
 x = (np.arange(nx) - (hdr['crpix2']-1) ) * dx
 dec = (np.arange(nx) - (hdr['crpix2']-1)) * hdr['cdelt2']  + hdr['crval2'] # are these mislabled? I thought dec was usually w/ x axis
 # then conver to arc sec
+
 ny = hdr['naxis1']
 dy = hdr['cdelt1'] * 3600 # [arcsec]
 y = (np.arange(ny) - (hdr['crpix1']-1) ) * dy
@@ -63,6 +70,7 @@ U = data[2,0,:,:]
 V = data[3,0,:,:]
 
 
+print(data.shape)
 def plot_q():
     ax = plt.gca()
     im = ax.contourf(dec, ra, Q,cmap='viridis', levels=50)
@@ -108,10 +116,10 @@ def plot_u():
 
 
 
-if __name__ == "__main__":
-    plot_i()
-    plot_q()
-    plot_u()
+#if __name__ == "__main__":
+    # plot_i()
+    # plot_q()
+    # plot_u()
 
 
 
