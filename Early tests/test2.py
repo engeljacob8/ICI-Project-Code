@@ -36,6 +36,7 @@ bmin = hdr1['ttype2']  # [arcsec]
 bpa = hdr1['ttype3'] # [deg]
 
 # Image Coordinates
+#
 nx = hdr['naxis2'] # width of x dimension
 dx = hdr['cdelt2'] * 3600 # [arcsec] --cdelt refers to scale/step size per pixel
 x = (np.arange(nx) - (hdr['crpix2']-1) ) * dx
@@ -50,7 +51,7 @@ ra = ra - 252.31355833 # center image
 
 #map coordinates
 extent = [
-    dec.min(), dec.max(),
+    dec.max(), dec.min(),
     ra.min(), ra.max()
 ]
 
@@ -152,7 +153,7 @@ def plot_pf():
 
 def cont_plot_p():
     ax = plt.gca()
-    im = ax.contourf(ra, dec, P_simple, cmap='viridis', extent = extent, levels=50)
+    im = ax.contourf( P_simple, cmap='viridis', extent = extent, levels=50)
     ax.set_xlabel(r'$\Delta$RA (arcsec)')
     ax.set_ylabel(r'$\Delta$Dec (arcsec)')
     ax.set_aspect('equal')
@@ -161,7 +162,6 @@ def cont_plot_p():
                           levels=[3 * noise_I, 10 * noise_I, 25 * noise_I, 50 * noise_I, 100 * noise_I, 200 * noise_I,
                                   325 * noise_I, 500 * noise_I, 1000 * noise_I])
     ax.clabel(contours, inline=1, fontsize=10)
-    ax.xaxis.set_inverted(True)
 
     cbar = plt.colorbar(im)
     cbar.set_label('P [Jy/beam]')
@@ -185,7 +185,7 @@ def im_plot_p():
     cbar = plt.colorbar(im)
     cbar.set_label('P [Jy/beam]')
 
-    plt.xlim(-3,3)
+    plt.xlim(3,-3)
     plt.ylim(-3,3)
     plt.show()
 
