@@ -51,6 +51,7 @@ x = (np.arange(nx) - (hdr['crpix2']-1) ) * dx
 dec = (np.arange(nx) - (hdr['crpix2']-1)) * hdr['cdelt2']  + hdr['crval2'] # are these mislabled? I thought dec was usually w/ x axis
 # then conver to arc sec
 
+
 ny = hdr['naxis1']
 dy = hdr['cdelt1'] * 3600 # [arcsec]
 y = (np.arange(ny) - (hdr['crpix1']-1) ) * dy
@@ -69,8 +70,9 @@ Q = data[1,0,:,:]
 U = data[2,0,:,:]
 V = data[3,0,:,:]
 
+I_arr = np.array(I)
 
-print(data.shape)
+print(I_arr.shape)
 def plot_q():
     ax = plt.gca()
     im = ax.contourf(dec, ra, Q,cmap='viridis', levels=50)

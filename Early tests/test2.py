@@ -146,8 +146,8 @@ Uy =  100*pf * np.cos(pa_arr)
 
 
 if __name__ == "__main__":
-    pltf.plot_i(I,ra,dec, noise_I, bmaj= bmaj, bmin= bmin, bpa= bpa, U_arr= U_arr, Q_arr= Q_arr, pf= pf)
-
+    pltf.plot_i(I,ra,dec, noise_I,bmaj= bmaj, bmin= bmin, bpa= bpa, U_arr= U_arr, Q_arr= Q_arr, pf= pf)
+    pltf.plot_i_test(I,ra,dec, noise_I,bmaj= bmaj, bmin= bmin, bpa= bpa, Ux = Ux, Uy = Uy)
     # pltf.plot_q(Q, ra, dec, I, noise_I)
     # #
     # pltf.plot_u(U, ra, dec, I, noise_I, noise_U= noise_U)
