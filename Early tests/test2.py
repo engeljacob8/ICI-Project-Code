@@ -127,8 +127,8 @@ pf = np.full_like(I_arr, np.nan)
 
 mask = (
 
-        (I_arr > 2* noise_I) &
-        (P_simple >2*   noise_P)
+        (I_arr > 3* noise_I) &
+        (P_simple >3*   noise_P)
     )
 
 #pf = P_simple/I_arr
@@ -146,16 +146,16 @@ Uy =  100*pf * np.cos(pa_arr)
 
 
 if __name__ == "__main__":
-    pltf.plot_i(I,ra,dec, noise_I, bmaj= bmaj, bmin= bmin, bpa= bpa, ux=Ux, uy=Uy)
+    pltf.plot_i(I,ra,dec, noise_I, bmaj= bmaj, bmin= bmin, bpa= bpa, U_arr= U_arr, Q_arr= Q_arr, pf= pf)
 
-    #pltf.plot_q(Q, ra, dec, I, noise_I)
-    #
-    #pltf.plot_u(U, ra, dec, I, noise_I, noise_U= noise_U)
-    #
-    # pltf.cont_plot_p(P_simple, I, noise_I, extent, ra, dec)
-    #
-    #pltf.im_plot_p(P_simple,extent ,noise_I, I,bmaj= bmaj, bmin= bmin, bpa= bpa)
-    #
+    # pltf.plot_q(Q, ra, dec, I, noise_I)
+    # #
+    # pltf.plot_u(U, ra, dec, I, noise_I, noise_U= noise_U)
+    # #
+    # pltf.cont_plot_p(P_simple, I, noise_I, ra, dec)
+    # #
+    # pltf.im_plot_p(P_simple,extent ,noise_I, I,bmaj= bmaj, bmin= bmin, bpa= bpa)
+    # #
     pltf.image_plot_pf(pf, extent)
 
 

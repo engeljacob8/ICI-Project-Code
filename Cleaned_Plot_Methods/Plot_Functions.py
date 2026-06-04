@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from radio_beam import Beam
 import astropy.units as u
-
+from scipy.interpolate import RegularGridInterpolator as rgi
 
 
 def image_plot_pf(pf,extent, **kwargs ):
@@ -129,8 +129,8 @@ def plot_i(I, ra, dec, noise_I, **kwargs):
          artist = plot_beam(kwargs['bmaj'], kwargs['bmin'], kwargs['bpa'])
          ax.add_artist(artist)
 
-    if 'ux' in kwargs:
-        ax.quiver(ra, dec, kwargs['ux'], kwargs['uy'], pivot='middle', scale=30 )
+    if 'U_arr' in kwargs:
+        plot_vectors(ra, dec, ax, kwargs['bmaj'], kwargs['bmin'], kwargs['U_arr'], kwargs['Q_arr'], kwargs['pf'])
 
     plt.xlim(3,-3) #manually swapped direction
     plt.ylim(-3,3)
@@ -171,3 +171,35 @@ def plot_beam(bmaj, bmin,bpa):
     pixscale = u.arcsec
     ellipse_artist = my_beam.ellipse_to_plot(x_cen_pix, y_cen_pix, pixscale, facecolor='black')
     return ellipse_artist
+
+def plot_vectors(ra, dec,ax, bmaj, bmin , U_arr, Q_arr, pf):
+    spacingx = bmaj/4
+    spacingy = bmin/4
+    x_sample = np.arange(ra.min(), ra.max(), spacingx)
+    y_sample = np.arange(dec.min(), dec.max(), spacingy)
+    xx, yy = np.meshgrid(x_sample, y_sample)
+
+    # Q_sample = rgi([xx, yy], Q_arr)
+    # U_sample = rgi([xx,yy], U_arr)
+
+    Q_interp = rgi( (ra,dec), Q_arr)
+    U_interp = rgi( (ra,dec), U_arr)
+    pf_interp = rgi( (ra,dec), pf)
+
+    points = np.column_stack((xx.flatten(), yy.flatten()))
+
+    Q_sample = Q_interp(points)
+    U_sample = U_interp(points)
+    pf_sample = pf_interp(points)
+
+    Q_sample = Q_sample.reshape(xx.shape)
+    U_sample = U_sample.reshape(xx.shape)
+    pf_sample = pf_sample.reshape(xx.shape)
+
+    pa_arr = .5 * np.arctan2(U_sample, Q_sample)  # this angle is east of north
+    # cartesian
+    Ux = 100 * pf_sample * -np.sin(pa_arr)
+    Uy = 100 * pf_sample * np.cos(pa_arr)
+
+    ax.quiver(xx, yy, Ux, Uy, pivot='middle', scale=30)
+
