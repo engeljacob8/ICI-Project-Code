@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 from scipy.special import i0
 from scipy.optimize import minimize
 import Cleaned_Plot_Methods.Plot_Functions as pltf
-
+from scipy.interpolate import make_interp_spline
 # open fits file
 file_name = 'data/AS209.nsc.robust_0.5.image.fits'
 hdul = fits.open(file_name)
@@ -89,74 +89,71 @@ P_m = np.sqrt(Q_arr**2 + U_arr**2)
 P_simple = np.sqrt(np.maximum(Q_arr**2 + U_arr**2 - noise_P**2,0))
 
 #debiased intensity
-#P = sp.symbols('P')
 
-#pdf = P/noise_P**2 * j0((P * P_m)/noise_P**2) * np.exp(- (P_m**2 + P**2)/2* noise_P**2)
-#cdf = 1/(np.pi * noise_P**2) * np.exp(-(P**2 + P_m**2)/(2 * noise_P**2)) ((1-P**2/noise_P**2) * sp.integrate(np.exp(((P*P_m)/noise_P**2)*np.cos(theta)), 0, np.pi ) + P*P_m/noise_P**2 * sp.integrate(np.cos(theta)*np.exp((P*P_m*np.cos(theta)/noise_P**2)), 0, np.pi))
 
 P_debiased = np.full_like(P_m, np.nan)
 
-# for iy in range(P_m.shape[0]):
-#     for ix in range(P_m.shape[1]):
-#         pm = P_m[iy, ix]
-#         if not np.isfinite(pm):
-#             continue
-#
-#         if pm <= 5 * noise_P:
-#
-#             def neg_pdf(P):
-#                 P = x[0]
-#
-#                 pdf = (
-#                     P / noise_P ** 2
-#                     * i0((P * pm) / (noise_P ** 2))
-#                     * np.exp(-(pm ** 2 + P ** 2) / (2 * noise_P ** 2))
-#                 )
-#                 return -pdf
-#
-#             res = minimize(neg_pdf, [max(pm, 1e-10)], bounds=[(0, None)])
-#
-#             P_debiased[iy, ix] = res.x[0]
-#         else:
-#             P_debiased[iy, ix] = np.sqrt(max(pm**2 - noise_P**2,0))
+pm_values = np.linspace(0,5*noise_P, 50)
+p_values = np.linspace(0,I_arr.max(), 100)
+results = np.full_like(pm_values, np.nan)
 
+for i in range(len(pm_values)):
+    results[i] = np.argmax(
+                    p_values / noise_P ** 2
+                    * i0((p_values * pm_values[i]) / (noise_P ** 2))
+                    * np.exp(-(pm_values[i] ** 2 + p_values ** 2) / (2 * noise_P ** 2))
+                )
+
+
+interp_obj = make_interp_spline(pm_values, results )
+P_debiased = np.where(np.isinf(P_m),0,np.where(P_m < 5 * noise_P,interp_obj(P_m), P_simple))
 
 # linear polarization fraction
-noise_pf = P_simple/I_arr * np.sqrt((noise_P/P_simple)**2 + (noise_I/I)**2)
-pf = np.full_like(I_arr, np.nan)
+error_pf = P_simple/I_arr * np.sqrt((noise_P/P_simple)**2 + (noise_I/I)**2)
 
-mask = (
+pf_debiased = np.full_like(I_arr, np.nan)
+pf_simple = np.full_like(I_arr, np.nan)
 
+mask1 = (
         (I_arr > 3* noise_I) &
         (P_simple >3*   noise_P)
+)
+pf_simple[mask1] = P_simple[mask1]/I_arr[mask1]
+
+mask = (
+        (I_arr > 3* noise_I) &
+        (P_debiased > 3* noise_P)
     )
 
 #pf = P_simple/I_arr
-pf[mask] = P_simple[mask]/I_arr[mask]
+pf_debiased[mask] = P_debiased[mask]/I_arr[mask]
 
 
 
-#polarization angle
-pa_arr = .5 * np.arctan2(U_arr, Q_arr) # this angle is east of north
-#cartesian
-Ux =  100*pf *-np.sin(pa_arr)
-Uy =  100*pf * np.cos(pa_arr)
+# #polarization angle
+# pa_arr = .5 * np.arctan2(U_arr, Q_arr) # this angle is east of north
+# #cartesian
+# Ux =  100*pf *-np.sin(pa_arr)
+# Uy =  100*pf * np.cos(pa_arr)
 
 
 
 
 if __name__ == "__main__":
-    pltf.plot_i(I,ra,dec, noise_I,bmaj= bmaj, bmin= bmin, bpa= bpa, U_arr= U_arr, Q_arr= Q_arr, pf= pf)
-    pltf.plot_i_test(I,ra,dec, noise_I,bmaj= bmaj, bmin= bmin, bpa= bpa, Ux = Ux, Uy = Uy)
+    pltf.plot_i(I,ra,dec, noise_I,bmaj= bmaj, bmin= bmin, bpa= bpa, U_arr= U_arr, Q_arr= Q_arr, pf= pf_debiased)
+
+    #pltf.plot_i(I,ra, dec, noise_I)
     # pltf.plot_q(Q, ra, dec, I, noise_I)
     # #
     # pltf.plot_u(U, ra, dec, I, noise_I, noise_U= noise_U)
     # #
-    # pltf.cont_plot_p(P_simple, I, noise_I, ra, dec)
+    pltf.cont_plot_p(P_debiased, I, noise_I, ra, dec)
+    pltf.cont_plot_p(P_simple, I, noise_I, ra, dec)
     # #
     # pltf.im_plot_p(P_simple,extent ,noise_I, I,bmaj= bmaj, bmin= bmin, bpa= bpa)
     # #
-    pltf.image_plot_pf(pf, extent)
+    pltf.image_plot_pf(pf_simple, extent)
+    pltf.image_plot_pf(pf_debiased, extent)
 
 
     hdul.close()

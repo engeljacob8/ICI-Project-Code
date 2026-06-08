@@ -32,17 +32,17 @@ for card in (hdr.cards):
 # data has dimensions of [stokes, frequency, x-axis, y-axis]
 data = hdul[0].data
 data1 = hdul[1].data
-print(data1.shape)
-print(data1)
 
-print(data1[0][0])
-print(data1[0][1])
-print(data1[0][2])
+
+
 # Beam info
-bmaj = hdr1['ttype1']  # [arcsec] -- does this need to be changed? I think it's already in arcsec according to data table
-bmin = hdr1['ttype2']  # [arcsec]
-bpa = hdr1['ttype3'] # [deg]
+
+bmaj = data1[0][0]  # [arcsec] -- does this need to be changed? I think it's already in arcsec according to data table
+bmin = data1[0][1]   # [arcsec]
+bpa = data1[0][2]  # [deg]
 print(bmaj)
+print(bmin)
+print(bpa)
 
 # Image Coordinates
 nx = hdr['naxis2'] # width of x dimension
