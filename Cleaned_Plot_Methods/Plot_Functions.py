@@ -136,7 +136,8 @@ def plot_i(I, ra, dec, noise_I,**kwargs):
     #if 'U_arr' in kwargs:
         #plot_vectors(ra, dec, ax, kwargs['bmaj'], kwargs['bmin'], kwargs['U_arr'], kwargs['Q_arr'], kwargs['pf'])
 
-    #plot_radius(34.9, 85.8, ax)
+
+    plot_radius(34.9, 85.8, ax)
     plot_vect_on_radius(ra, dec, ax, kwargs['bmaj'], kwargs['bmin'], kwargs['U_arr'], kwargs['Q_arr'], kwargs['pf'])
 
     plt.xlim(3,-3) #manually swapped direction
@@ -276,12 +277,12 @@ def create_radius(angle_incl, angle_pa ):
 
 def plot_vect_on_radius(x_axis, y_axis,ax, bmaj, bmin , U_arr, Q_arr, pf):
     # sample points at 1/2 beams
-    x_sample, y_sample = create_radius(34.9, 85.8)
+    x_sample, y_sample, vx_sky, vy_sky = radius_azimuthal(34.9, 85.8)
     #plot_radius(34.9, 85.8, ax)
 
 
     # instantiate rectangular grid interpolator
-    Q_interp = rgi((y_axis,x_axis), Q_arr, bounds_error=False, fill_value=np.nan)
+    Q_interp = rgi((y_axis,x_axis), Q_arr, bounds_error=False, fill_value=np.nan) #(dec, ra)
     U_interp = rgi((y_axis,x_axis), U_arr, bounds_error=False, fill_value=np.nan)
     pf_interp = rgi((y_axis,x_axis), pf, bounds_error=False, fill_value=np.nan)
 
@@ -303,5 +304,32 @@ def plot_vect_on_radius(x_axis, y_axis,ax, bmaj, bmin , U_arr, Q_arr, pf):
     d_y = .3 * pf_sample * 100 * np.cos(pa_arr)
 
     # yy plotted opposite since ra is plotted on x-axis in conventional graph
+    ax.quiver(y_sample, x_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5, scale_units='xy',headwidth=1e-10,
+              headlength=1e-10, headaxislength=1e-10, width=0.005)
     ax.quiver(y_sample,x_sample, d_y, d_x, pivot='middle', color='red', scale=1, scale_units='xy', headwidth=1e-10,
               headlength=1e-10, headaxislength=1e-10, width=0.005)
+
+def radius_azimuthal(angle_incl, angle_pa ):
+    spacing = 10  # simple start -
+    phi = np.linspace(0, 2 * np.pi, spacing)  # for now, 10
+    # radius_plots = i  # arc sec for now #change this later for multiple radius
+
+
+    x0 = 1 * np.cos(phi)
+    y0 = 1 * np.sin(phi)
+    #create azimuthal vectors
+    vx_disk = -y0
+    vy_disk = x0
+    vx_sky = vx_disk
+
+    vy_sky = vy_disk * np.cos(np.radians(angle_incl))
+    y0 = y0  * np.cos(np.radians(angle_incl))
+
+    # rotate - works for when east is to the left
+
+    angle_pa = np.radians(angle_pa)
+    x = x0 * np.cos(angle_pa) - np.sin(angle_pa) * y0
+    y = y0 * np.cos(angle_pa) + np.sin(angle_pa) * x0
+    vx = vx_sky * np.cos(angle_pa) - vy_sky * np.sin(angle_pa)
+    vy = vy_sky * np.cos(angle_pa) + vx_sky * np.sin(angle_pa)
+    return x, y, vx, vy
