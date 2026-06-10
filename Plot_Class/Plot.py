@@ -115,7 +115,9 @@ class Plot:
         d_ra = .3 * pf_sample * 100 * np.sin(pa_arr) #dec on x ax
         d_dec = .3 * pf_sample * 100 * np.cos(pa_arr)
 
-
+        comparison_angle = np.atan2(vra_azi,vdec_azi)
+        vra = np.sin(comparison_angle)
+        vdec = np.cos(comparison_angle)
         #ax.quiver(ra_sample, dec_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5, scale_units='xy',headwidth=1e-10,
                   #headlength=1e-10, headaxislength=1e-10, width=0.005)
 
@@ -123,7 +125,7 @@ class Plot:
                   headlength=1e-10, headaxislength=1e-10, width=0.005)
         ax.quiverkey(q, X=0.85, Y=1.05, U=.3, label='1 % Polarization', labelpos='E')
         if comparison:
-            ax.quiver(ra_sample, dec_sample, vra_azi, vdec_azi, pivot='middle',angles='xy',color='white', scale=5, scale_units='xy',headwidth=1e-10,
+            ax.quiver(ra_sample, dec_sample, vra, vdec, pivot='middle',angles='xy',color='white', scale=5, scale_units='xy',headwidth=1e-10,
                  headlength=1e-10, headaxislength=1e-10, width=0.005)
         return pa_arr, vra_azi, vdec_azi
         #debug check
@@ -154,8 +156,8 @@ class Plot:
         spacing = 10 #simple start -
         phi = np.linspace(0, 2*np.pi, spacing) # for now, 10
         #radius of 1 arc sec - change later for multiple radii at different points with correct 1/2 beam spacing
-
-        radii = np.array([self.bmaj/2, self.bmaj, self.bmaj + .5])
+        #self.bmaj, self.bmaj + .5
+        radii = np.array([self.bmaj/2 ])
         ra_disk = (radii[:,None] * np.cos(phi)).ravel()
         dec_disk = (radii[:,None] * np.sin(phi)).ravel()
 
@@ -182,7 +184,7 @@ class Plot:
 
     def compare_angles(self, obs_angle, vra_azi, vdec_azi):
         exp_angle = np.atan2(vra_azi, vdec_azi)
-        diff_angle = np.where(obs_angle is not np.nan,obs_angle - exp_angle,np.nan)
+        diff_angle = np.degrees(obs_angle - exp_angle)
         ax = plt.gca()
         ax.hist(diff_angle)
         ax.set_xlabel('Difference of Observed and Expected Angle')
