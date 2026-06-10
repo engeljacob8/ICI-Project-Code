@@ -34,7 +34,9 @@ data1 = hdul[1].data
 bmaj = data1[0][0]  # [arcsec] -- does this need to be changed? I think it's already in arcsec according to data table
 bmin = data1[0][1]   # [arcsec]
 bpa = data1[0][2]  # [deg]
-
+print(bmaj)
+print(bmin)
+print(bpa)
 # Image Coordinates
 #Q is there a better way to center + change to offset
 nx = hdr['naxis2'] # width of x dimension
@@ -154,6 +156,7 @@ if __name__ == "__main__":
     # #
     pltf.image_plot_pf(pf_simple, extent)
     pltf.image_plot_pf(pf_debiased, extent)
+
 
 
     hdul.close()

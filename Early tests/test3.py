@@ -133,6 +133,8 @@ if __name__ == "__main__":
 
 
     plot1.plot_vect_radius(pf_debiased, ax1)
-    plt.xlim(3, -3)
-    plt.ylim(-3, 3)
+    ax1.set_xlim(3,-3)
+    ax1.set_ylim(-3,3)
+    # plt.xlim(-3,3)
+    # plt.ylim(-3, 3)
     plt.show()

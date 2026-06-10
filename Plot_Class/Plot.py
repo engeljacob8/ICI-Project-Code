@@ -114,30 +114,50 @@ class Plot:
         pa_arr = .5 * np.arctan2(U_sample, Q_sample)  # this angle is east of north
         # cartesian
         # .3 arcsec for 1% polarization
-        d_dec = .3 * pf_sample * 100 * -np.sin(pa_arr)
-        d_ra = .3 * pf_sample * 100 * np.cos(pa_arr)
+        d_ra = .3 * pf_sample * 100 * -np.sin(pa_arr) #dec on x ax
+        d_dec = .3 * pf_sample * 100 * np.cos(pa_arr)
 
         # yy plotted opposite since ra is plotted on x-axis in conventional graph
         #ax.quiver(ra_sample, dec_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5, scale_units='xy',headwidth=1e-10,
          #         headlength=1e-10, headaxislength=1e-10, width=0.005)
-        ax.quiver(dec_sample, ra_sample, d_ra, d_dec, pivot='middle', color='red', scale=1, scale_units='xy', headwidth=1e-10,
+
+        ax.quiver(dec_sample, ra_sample, d_dec, d_ra, pivot='middle', color='red', scale=1, scale_units='xy', headwidth=1e-10,
                   headlength=1e-10, headaxislength=1e-10, width=0.005)
+        # vectors appear to be unchanged from axis inversion - only positions swap
+        ax.quiver(
+            [1],
+            [0],
+            [1],
+            [1],
+            color='yellow',
+            scale=1,
+            scale_units='xy'
+        )
+        ax.quiver(
+            [0],
+            [0],
+            [1],
+            [0],
+            color='cyan',
+            scale=1,
+            scale_units='xy'
+        )
+
 
 
     def create_radius(self ):
-
         spacing = 10 #simple start -
         phi = np.linspace(0, 2*np.pi, spacing) # for now, 10
         #radius_plots = i  # arc sec for now #change this later for multiple radius
 
-        ra_0 = 1 * np.cos(phi)
-        dec_0 = 1 * np.cos(np.radians(self.angle_incl)) * np.sin(phi)
+        ra_disk = 1 * np.cos(phi)
+        dec_disk = 1 * np.cos(np.radians(self.angle_incl)) * np.sin(phi)
 
         # rotate - works for when east is to the left
         angle_pa = np.radians(self.angle_pa)
-        ra = ra_0 * np.cos(angle_pa) - np.sin(angle_pa) * dec_0
-        dec = dec_0 * np.cos(angle_pa) + np.sin(angle_pa) * ra_0
-        return ra, dec
+        ra_image = ra_disk * np.cos(angle_pa) - np.sin(angle_pa) * dec_disk
+        dec_image = dec_disk * np.cos(angle_pa) + np.sin(angle_pa) * ra_disk
+        return ra_image, dec_image
 
 
 
