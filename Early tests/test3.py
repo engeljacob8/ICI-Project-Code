@@ -132,9 +132,8 @@ if __name__ == "__main__":
     ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True)
 
 
-    plot1.plot_vect_radius(pf_debiased, ax1)
+    obs_angles, vra_azi, vdec_azi = plot1.plot_vect_radius(pf_debiased, ax1, comparison=True)
     ax1.set_xlim(3,-3)
     ax1.set_ylim(-3,3)
-    # plt.xlim(-3,3)
-    # plt.ylim(-3, 3)
     plt.show()
+    plot1.compare_angles(obs_angles, vra_azi, vdec_azi)

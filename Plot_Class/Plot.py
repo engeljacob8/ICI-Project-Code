@@ -89,11 +89,9 @@ class Plot:
 
 
 
-    def plot_vect_radius(self,pf,ax):
-        # sample points at 1/2 beams
-        ra_sample, dec_sample = self.create_radius()
-        #plot_radius(34.9, 85.8, ax)
-
+    def plot_vect_radius(self,pf,ax, comparison=False):
+        #sample points along radius
+        ra_sample, dec_sample, vra_azi, vdec_azi = self.create_radius()
 
         # instantiate rectangular grid interpolator
         Q_interp = rgi((self.dec,self.ra), self.Q, bounds_error=False, fill_value=np.nan) #(dec, ra)
@@ -114,51 +112,80 @@ class Plot:
         pa_arr = .5 * np.arctan2(U_sample, Q_sample)  # this angle is east of north
         # cartesian
         # .3 arcsec for 1% polarization
-        d_ra = .3 * pf_sample * 100 * -np.sin(pa_arr) #dec on x ax
+        d_ra = .3 * pf_sample * 100 * np.sin(pa_arr) #dec on x ax
         d_dec = .3 * pf_sample * 100 * np.cos(pa_arr)
 
-        # yy plotted opposite since ra is plotted on x-axis in conventional graph
-        #ax.quiver(ra_sample, dec_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5, scale_units='xy',headwidth=1e-10,
-         #         headlength=1e-10, headaxislength=1e-10, width=0.005)
 
-        ax.quiver(dec_sample, ra_sample, d_dec, d_ra, pivot='middle', color='red', scale=1, scale_units='xy', headwidth=1e-10,
+        #ax.quiver(ra_sample, dec_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5, scale_units='xy',headwidth=1e-10,
+                  #headlength=1e-10, headaxislength=1e-10, width=0.005)
+
+        q = ax.quiver(ra_sample, dec_sample, d_ra, d_dec, pivot='middle', angles='xy', color='red', scale=1, scale_units='xy', headwidth=1e-10,
                   headlength=1e-10, headaxislength=1e-10, width=0.005)
-        # vectors appear to be unchanged from axis inversion - only positions swap
-        ax.quiver(
-            [1],
-            [0],
-            [1],
-            [1],
-            color='yellow',
-            scale=1,
-            scale_units='xy'
-        )
-        ax.quiver(
-            [0],
-            [0],
-            [1],
-            [0],
-            color='cyan',
-            scale=1,
-            scale_units='xy'
-        )
+        ax.quiverkey(q, X=0.85, Y=1.05, U=.3, label='1 % Polarization', labelpos='E')
+        if comparison:
+            ax.quiver(ra_sample, dec_sample, vra_azi, vdec_azi, pivot='middle',angles='xy',color='white', scale=5, scale_units='xy',headwidth=1e-10,
+                 headlength=1e-10, headaxislength=1e-10, width=0.005)
+        return pa_arr, vra_azi, vdec_azi
+        #debug check
+        # ax.quiver(
+        #     [0],
+        #     [0],
+        #     [1],
+        #     [0],
+        #     color='yellow',
+        #     angles='xy',
+        #     scale=1,
+        #     scale_units='xy'
+        # )
+        # ax.quiver(
+        #     [0],
+        #     [0],
+        #     [0],
+        #     [1],
+        #     color='cyan',
+        #     angles='xy',
+        #     scale=1,
+        #     scale_units='xy'
+        # )
 
 
 
     def create_radius(self ):
         spacing = 10 #simple start -
         phi = np.linspace(0, 2*np.pi, spacing) # for now, 10
-        #radius_plots = i  # arc sec for now #change this later for multiple radius
+        #radius of 1 arc sec - change later for multiple radii at different points with correct 1/2 beam spacing
 
-        ra_disk = 1 * np.cos(phi)
-        dec_disk = 1 * np.cos(np.radians(self.angle_incl)) * np.sin(phi)
+        radii = np.array([self.bmaj/2, self.bmaj, self.bmaj + .5])
+        ra_disk = (radii[:,None] * np.cos(phi)).ravel()
+        dec_disk = (radii[:,None] * np.sin(phi)).ravel()
 
-        # rotate - works for when east is to the left
+        #create azimuthal comparison
+        ra_disk_azi = -dec_disk
+        dec_disk_azi = ra_disk
+
+        #convert to image coordinates
+        ra_im0 = ra_disk
+        dec_im0 = dec_disk * np.cos(np.radians(self.angle_incl))
+
+        vra_im =  ra_disk_azi
+        vdec_im = dec_disk_azi * np.cos(np.radians(self.angle_incl))
+
+        # rotate - intentionally changed because east to north is swapped
         angle_pa = np.radians(self.angle_pa)
-        ra_image = ra_disk * np.cos(angle_pa) - np.sin(angle_pa) * dec_disk
-        dec_image = dec_disk * np.cos(angle_pa) + np.sin(angle_pa) * ra_disk
-        return ra_image, dec_image
+        ra_image = ra_im0 * np.sin(angle_pa) - np.cos(angle_pa) * dec_im0
+        dec_image = dec_im0 * np.sin(angle_pa) + np.cos(angle_pa) * ra_im0
+
+        vra_image= vra_im * np.sin(angle_pa) - np.cos(angle_pa) * vdec_im
+        vdec_image = vdec_im * np.sin(angle_pa) + np.cos(angle_pa) * vra_im
+        return ra_image, dec_image, vra_image, vdec_image
 
 
-
+    def compare_angles(self, obs_angle, vra_azi, vdec_azi):
+        exp_angle = np.atan2(vra_azi, vdec_azi)
+        diff_angle = np.where(obs_angle is not np.nan,obs_angle - exp_angle,np.nan)
+        ax = plt.gca()
+        ax.hist(diff_angle)
+        ax.set_xlabel('Difference of Observed and Expected Angle')
+        ax.set_ylabel('Frequency')
+        plt.show()
 

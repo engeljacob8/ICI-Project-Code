@@ -304,9 +304,9 @@ def plot_vect_on_radius(x_axis, y_axis,ax, bmaj, bmin , U_arr, Q_arr, pf):
     d_y = .3 * pf_sample * 100 * np.cos(pa_arr)
 
     # yy plotted opposite since ra is plotted on x-axis in conventional graph
-    ax.quiver(y_sample, x_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5, scale_units='xy',headwidth=1e-10,
+    ax.quiver(y_sample, x_sample, -vy_sky, vx_sky, pivot='middle',color='white', scale=5,angles='xy', scale_units='xy',headwidth=1e-10,
               headlength=1e-10, headaxislength=1e-10, width=0.005)
-    ax.quiver(y_sample,x_sample, d_y, d_x, pivot='middle', color='red', scale=1, scale_units='xy', headwidth=1e-10,
+    ax.quiver(y_sample,x_sample, d_y, d_x, pivot='middle', color='red', scale=1, angles='xy',scale_units='xy', headwidth=1e-10,
               headlength=1e-10, headaxislength=1e-10, width=0.005)
 
 def radius_azimuthal(angle_incl, angle_pa ):
