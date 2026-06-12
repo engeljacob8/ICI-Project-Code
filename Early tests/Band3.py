@@ -128,12 +128,23 @@ if __name__ == "__main__":
     plot1.set_stokes(I, Q, U)
     plot1.set_noise(noise_I, noise_Q, noise_U)
     plot1.set_beam(bmaj, bmin, bpa)
+    plot1.set_band('Band 3')
 
-    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True)
+    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
 
 
-    obs_angles, vra_azi, vdec_azi = plot1.plot_vect_radius(pf_debiased, ax1, comparison=True)
-    ax1.set_xlim(3,-3)
-    ax1.set_ylim(-3,3)
+    obs_angles, comp_angles = plot1.plot_vect_radius(pf_debiased, ax1, comparison=True)
     plt.show()
-    plot1.compare_angles(obs_angles, vra_azi, vdec_azi)
+
+    plot1.compare_angles(obs_angles, comp_angles)
+    plt.show()
+    ax2 = plot1.plot(Q_arr, 'Stokes Q', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    plt.show()
+    ax3 = plot1.plot(U_arr, 'Stokes U', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    plt.show()
+    ax4 = plot1.plot(P_debiased, 'Stokes P', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    plt.show()
+    ax5 = plot1.plot(pf_debiased, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=True, au=True)
+    plt.show()
+    ax6 = plot1.plot(pf_simple, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=False)
+    plt.show()
