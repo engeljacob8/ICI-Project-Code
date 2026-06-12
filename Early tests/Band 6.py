@@ -8,7 +8,7 @@ from scipy.interpolate import make_interp_spline
 from Plot_Class import Plot
 # open fits file
 
-file_name = 'data/member.uid___A001_X136d_X1d5.AS_209_sci.spw25_27_29_31.mfs.IQUV.manual.pbcor (1).fits'
+file_name = 'data/member.uid___A001_X136d_X1d5.AS_209_sci.spw25_27_29_31.mfs.IQUV.manual.pbcor.fits'
 hdul = fits.open(file_name)
 
 # header
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     plot1.set_window(4)
     plot1.set_band('Band 6')
 
-    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True, axis=True)
 
 
     obs_angles, comp_angles = plot1.plot_vect_radius(pf_debiased, ax1, comparison=True)

@@ -69,7 +69,8 @@ class Plot:
         ax.add_artist(ellipse_artist)
 
 
-    def plot (self, value, value_name, unit,overlay_extent=None, overlay=False, beam=False,contour=False, sig_levels=False, ax=None,au=False ,color='viridis'):
+    def plot (self, value, value_name, unit,overlay_extent=None,overlay=False,
+              beam=False,contour=False, sig_levels=False, ax=None,au=False ,color='viridis', axis=False):
         if ax is None:
             ax = plt.gca()
         if contour:
@@ -99,7 +100,10 @@ class Plot:
         ax.set_xlabel(r'$\Delta$RA (arcsec)')
         ax.set_ylabel(r'$\Delta$Dec (arcsec)')
         ax.set_aspect('equal')
-
+        if axis:
+            slope = np.tan(np.radians(90-self.angle_pa))
+            ax.axline((0,0),slope=slope, linestyle='--' )
+            ax.axline((0, 0), slope= -1/slope, linestyle='--')
         if overlay:
             ax.set_title(f'Polarization at band {self.band} + 1.2mm Dust')
         else:
@@ -231,13 +235,13 @@ class Plot:
         vdec_im = dec_disk_azi * np.cos(np.radians(self.angle_incl))
 
         # rotate - intentionally changed because east to north is swapped
-        angle_pa = np.radians(self.angle_pa)
-        ra_image = ra_im0 * np.sin(angle_pa) - np.cos(angle_pa) * dec_im0
-        dec_image = dec_im0 * np.sin(angle_pa) + np.cos(angle_pa) * ra_im0
-
-        vra_image= vra_im * np.sin(angle_pa) - np.cos(angle_pa) * vdec_im
-        vdec_image = vdec_im * np.sin(angle_pa) + np.cos(angle_pa) * vra_im
-        return ra_image, dec_image, vra_image, vdec_image
+        # angle_pa = np.radians(self.angle_pa)
+        # ra_image = ra_im0 * np.sin(angle_pa) - np.cos(angle_pa) * dec_im0
+        # dec_image = dec_im0 * np.sin(angle_pa) + np.cos(angle_pa) * ra_im0
+        #
+        # vra_image= vra_im * np.sin(angle_pa) - np.cos(angle_pa) * vdec_im
+        # vdec_image = vdec_im * np.sin(angle_pa) + np.cos(angle_pa) * vra_im
+        return ra_im0, dec_im0, vra_im, vdec_im
 
 
     def compare_angles(self, obs_angle, exp_angle):
@@ -295,6 +299,7 @@ class Plot:
         return ax
 
 
+    #def principle_frame(self):
 
 
 
