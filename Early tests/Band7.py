@@ -131,7 +131,7 @@ mask = (
     )
 
 #pf = P_simple/I_arr
-pf_debiased[mask] = (P_debiased[mask]/I_arr[mask])
+pf_debiased = np.where(mask, P_debiased/I_arr, np.nan)
 
 
 if __name__ == "__main__":
@@ -142,25 +142,44 @@ if __name__ == "__main__":
     plot1.set_beam(bmaj, bmin, bpa)
     plot1.set_band('Band 7')
 
-    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
 
-
-    obs_angles, comp_angles = plot1.plot_vect_radius(pf_debiased, ax1, comparison=True)
-    plt.show()
-    plot1.compare_angles(obs_angles, comp_angles)
-
-    plt.show()
-    ax2 = plot1.plot(Q_arr, 'Stokes Q', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax3 = plot1.plot(U_arr, 'Stokes U', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax4 = plot1.plot(P_debiased, 'Stokes P', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax5 = plot1.plot(pf_debiased, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax6 = plot1.plot(pf_simple, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=False)
+    ax = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')
     plt.show()
 
-    ax7 = plot1.plot_overlay(file_name_cont)
-    plot1.plot_vect_radius(pf_debiased, ax7, comparison=False)
+    axI = plot1.plot_principle_frame('Stokes I', 'Jy/beam')
+    obs_angles, comp_angles, chi_error = plot1.plot_vect_radius( axI, comparison=True, principle_frame=True)
     plt.show()
+    plot1.compare_angles(obs_angles, comp_angles, chi_error)
+
+    plt.show()
+
+    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True,axis=True)
+    obs_angles_sky, comp_angles1,chi_error1 = plot1.plot_vect_radius( ax1, comparison=True)
+    plt.show()
+
+    #orginal comparison
+
+    plot1.compare_angles(obs_angles_sky, comp_angles1,chi_error1)
+
+    plt.show()
+    #test
+    plot1.test1(obs_angles, obs_angles_sky)
+    plot1.test2()
+    plot1.test3()
+    plot1.run_all_tests()
+
+
+    # ax2 = plot1.plot(Q_arr, 'Stokes Q', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    # plt.show()
+    # ax3 = plot1.plot(U_arr, 'Stokes U', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    # plt.show()
+    # ax4 = plot1.plot(P_debiased, 'Stokes P', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    # plt.show()
+    # ax5 = plot1.plot(pf_debiased, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=True, au=True)
+    # plt.show()
+    # ax6 = plot1.plot(pf_simple, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=False)
+    # plt.show()
+    #
+    # ax7 = plot1.plot_overlay(file_name_cont)
+    # plot1.plot_vect_radius(pf_debiased, ax7, comparison=False)
+    # plt.show()
