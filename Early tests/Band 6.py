@@ -6,9 +6,11 @@ from astropy.io import fits
 from scipy.special import i0
 from scipy.interpolate import make_interp_spline
 from Plot_Class import Plot
+from Plot_Class import Plot_updated
+
 # open fits file
 
-file_name = 'data/member.uid___A001_X136d_X1d5.AS_209_sci.spw25_27_29_31.mfs.IQUV.manual.pbcor.fits'
+file_name = 'data/member.uid___A001_X136d_X1d5.AS_209_sci.spw25_27_29_31.mfs.IQUV.manual.pbcor (1).fits'
 hdul = fits.open(file_name)
 
 # header
@@ -119,31 +121,40 @@ mask = (
     )
 
 #pf = P_simple/I_arr
-pf_debiased[mask] = P_debiased[mask]/I_arr[mask]
+pf_debiased = np.where(mask, P_debiased/I_arr, np.nan)
 
 if __name__ == "__main__":
-    plot1 = Plot.Plot(ra,dec)
+    plot1 = Plot_updated.Plot_updated(ra,dec)
+
     plot1.set_stokes(I, Q, U)
     plot1.set_noise(noise_I, noise_Q, noise_U)
     plot1.set_beam(bmaj, bmin, bpa)
     plot1.set_window(4)
     plot1.set_band('Band 6')
 
-    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True, axis=True)
+    plot1.sample_azimuth()
 
-
-    obs_angles, comp_angles = plot1.plot_vect_radius(pf_debiased, ax1, comparison=True)
-    plt.show()
-
-    plot1.compare_angles(obs_angles, comp_angles)
-    plt.show()
-    ax2 = plot1.plot(Q_arr, 'Stokes Q', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax3 = plot1.plot(U_arr, 'Stokes U', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax4 = plot1.plot(P_debiased, 'Stokes P', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax5 = plot1.plot(pf_debiased, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=True, au=True)
-    plt.show()
-    ax6 = plot1.plot(pf_simple, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=False)
-    plt.show()
+    # # plot Q in principle frame
+    # ax_Q_princ = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')
+    # plt.show()
+    # ax_Q = plot1.plot_image(Q_arr, 'Stokes Q', 'Jy/beam', contour=True)
+    # plt.show()
+    # # plot u principle
+    # ax_u_princ = plot1.plot_principle_frame('Stokes U', 'Jy/beam')
+    # plt.show()
+    # ax_U = plot1.plot_image(U_arr, 'Stokes U', 'Jy/beam', contour=True)
+    # plt.show()
+    #
+    # ax_I = plot1.plot_image(I_arr, 'Stokes I', 'Jy/beam', contour=True)
+    # obs_angles_im, exp_angles_im, chi_error_im = plot1.plot_vectors(ax_I, comparison=False)
+    # plt.show()
+    # # order of obs, exp, error
+    # plot1.compare_angles(obs_angles_im, exp_angles_im, chi_error_im)
+    # plt.show()
+    #
+    # ax_I_princ = plot1.plot_principle_frame('Stokes I', 'Jy/beam')
+    # obs_angles_princ, exp_angles_princ, chi_error_princ = plot1.plot_vectors(ax_I_princ, comparison=False,
+    #                                                                          principle_frame=True)
+    # plt.show()
+    # plot1.compare_angles(obs_angles_princ, exp_angles_princ, chi_error_princ)
+    # plt.show()

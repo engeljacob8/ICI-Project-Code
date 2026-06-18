@@ -29,7 +29,7 @@ class Plot:
         self.ra = ra
         self.dec = dec
         self.window = 3
-        self.set_principle_frame(None,None,None, None)
+        self.set_principle_frame(None,None,None, None,None)
         self.pf = None
 
     def set_pf(self,pf):
@@ -57,12 +57,13 @@ class Plot:
         self.Q = np.array(Q)
         self.U = np.array(U)
 
-    def set_principle_frame(self,  Q_princ, U_princ, x_princ, y_princ):
+    def set_principle_frame(self,  Q_princ, U_princ, x_princ, y_princ,I_principle):
 
         self.Q_princ = Q_princ
         self.U_princ = U_princ
         self.x_princ = x_princ
         self.y_princ = y_princ
+        self.I_princ = I_principle
 
 
 
@@ -122,24 +123,24 @@ class Plot:
 
 
 
-        if axis:
-            slope = np.tan(np.radians(90-self.angle_pa))
-            ax.axline((0,0),slope=slope, linestyle='--' ,linewidth=0.5, color='black',alpha=.5)
-            ax.axline((0, 0), slope= -1/slope, linestyle='--',linewidth=0.5, color='black',alpha=.5)
+
+        slope = np.tan(np.radians(90-self.angle_pa))
+        ax.axline((0,0),slope=slope, linestyle='--' ,linewidth=0.5, color='black',alpha=.5)
+        ax.axline((0, 0), slope= -1/slope, linestyle='--',linewidth=0.5, color='black',alpha=.5)
         if overlay:
             ax.set_title(f'Polarization at band {self.band} + 1.2mm Dust')
         else:
             ax.set_title(f'{value_name} {self.band}')
 
-        if beam:
-            self.plot_beam(ax)
-        if au:
-            ax.quiver(1,-self.window+1, 0.82644628099,0,  pivot='middle', angles='xy', color='black', scale=1, scale_units='xy', headwidth=1e-10,
-                  headlength=1e-10, headaxislength=1e-10, width=0.005)
-            ax.annotate(text='100 AU', xy=(1,1.8), xytext=(1.4,-self.window+1.1), textcoords='data', fontsize=7, color='black', weight='bold')
 
-        if sig_levels:
-            contours = ax.contour(self.ra, self.dec, self.I, colors='white', linewidths=.6, alpha=.5,
+        self.plot_beam(ax)
+
+        ax.quiver(1,-self.window+1, 0.82644628099,0,  pivot='middle', angles='xy', color='black', scale=1, scale_units='xy', headwidth=1e-10,
+                  headlength=1e-10, headaxislength=1e-10, width=0.005)
+        ax.annotate(text='100 AU', xy=(1,1.8), xytext=(1.4,-self.window+1.1), textcoords='data', fontsize=7, color='black', weight='bold')
+
+
+        contours = ax.contour(self.ra, self.dec, self.I, colors='white', linewidths=.6, alpha=.5,
                                   levels=[3 * self.noise_I, 10 * self.noise_I, 25 * self.noise_I, 50 * self.noise_I, 100 * self.noise_I,
                                           200 * self.noise_I,
                                           325 * self.noise_I, 500 * self.noise_I, 1000 * self.noise_I])
@@ -150,9 +151,7 @@ class Plot:
 
         ax.set_xlim(self.window, -self.window)
         ax.set_ylim(-self.window, self.window)
-        #change later - but base limit and axis switch
-        # plt.xlim(3, -3)
-        # plt.ylim(-3, 3)
+
         return ax
 
 
@@ -162,10 +161,10 @@ class Plot:
         dec_principle, ra_principle, q_principle, u_principle, maj, x = self.principle_frame()
 
         if value_name == 'Stokes I':
-            im = ax.contourf(ra_principle, dec_principle, self.I, cmap=color, levels=50)
+            im = ax.contourf(ra_principle, dec_principle, self.I_princ, cmap=color, levels=50)
         elif value_name == 'Stokes Q': # maybe mistmatch
-            im = ax.contourf(ra_principle, dec_principle, q_principle, cmap=color, levels=50)
-            contours1 = ax.contour(ra_principle, dec_principle, q_principle, colors='red', linewidths=.5, levels=[3 * self.noise_Q])
+            im = ax.contourf(self.ra, self.dec, q_principle, cmap=color, levels=50)
+            contours1 = ax.contour(self.ra, self.dec, q_principle, colors='red', linewidths=.5, levels=[3 * self.noise_Q])
             contours2 = ax.contour(ra_principle, dec_principle, q_principle, colors='blue', linewidths=.5, levels=[-3 * self.noise_Q])
         elif value_name == 'Stokes U':
             im = ax.contourf(ra_principle, dec_principle, u_principle, cmap=color, levels=50)
@@ -182,7 +181,7 @@ class Plot:
         ax.axline((0, 0), slope=np.inf, linestyle='--',linewidth=0.5, color='black',alpha=.5)
 
 
-        ax.contour(ra_principle,dec_principle , self.I, colors='white', linewidths=.4, alpha=.4,
+        ax.contour(dec_principle,ra_principle , self.I_princ, colors='white', linewidths=.4, alpha=.4,
                    levels=[3 * self.noise_I, 10 * self.noise_I, 25 * self.noise_I, 50 * self.noise_I,
                            100 * self.noise_I,
                            200 * self.noise_I,
@@ -376,15 +375,7 @@ class Plot:
             vdec_im0 = vdec_im
 
             eta = -np.radians(self.angle_pa-90)
-            #PROBLEM IS PROBABLY HERE WHERE AXIS SWITCH IS MISMATCHING COORDS FROM PRINCIPLE FRAME TO SKY
-            # x = x0 * np.cos(angle_pa) - np.sin(angle_pa) * y0
-            # y = y0 * np.cos(angle_pa) + np.sin(angle_pa) * x0
 
-            # ra_im = ra_im0 * np.cos(eta) - np.sin(eta) * dec_im0
-            # dec_im = dec_im0 * np.cos(eta) + np.sin(eta) * ra_im
-            #
-            # vdec_im = vdec_im0 * np.cos(eta) + np.sin(eta) * ra_im0
-            #vra_im = vra_im0 * np.cos(eta) - np.sin(eta) * vdec_im
             dec_im = ra_im0 * np.sin(eta) + np.cos(eta) * dec_im0
             ra_im = -dec_im0 * np.sin(eta) + np.cos(eta) * ra_im0
 
@@ -474,7 +465,20 @@ class Plot:
         q_principle = self.U * np.sin(2*angle_pa) + np.cos(2*angle_pa) * self.Q
         u_principle = -self.Q * np.sin(2*angle_pa) + np.cos(2*angle_pa) * self.U
 
-        self.set_principle_frame( q_principle, u_principle, x_principle, y_principle)
+        # pf and I principle DO live on the principle frame grid
+        #change angle_pa
+        angle_pa = -angle_pa
+        interp_I = rgi((self.dec, self.ra), self.I, bounds_error=False, fill_value=np.nan )
+        RAp, DECp = np.meshgrid( self.ra, self.dec )
+
+        RA = RAp * np.sin(angle_pa) + np.cos(angle_pa) * DECp
+        DEC = -DECp * np.sin(angle_pa) + np.cos(angle_pa) * RAp
+
+        points = np.column_stack([ DEC.ravel(), RA.ravel() ])
+        I_principle = interp_I(points).reshape(RAp.shape)
+
+
+        self.set_principle_frame( q_principle, u_principle, x_principle, y_principle,I_principle)
 
         return x_principle, y_principle, q_principle, u_principle, maj_principle, x_principle_test
 

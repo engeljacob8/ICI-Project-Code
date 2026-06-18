@@ -5,7 +5,7 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from scipy.special import i0
 from scipy.interpolate import make_interp_spline
-from Plot_Class import Plot
+from Plot_Class import Plot, Plot_updated
 # open fits file
 
 file_name_I = 'data/member.uid___A001_X1273_Xb73.as209_sci.spw13_15_17_19.cont.I.manual.clean.pbcor.fits'
@@ -135,51 +135,46 @@ pf_debiased = np.where(mask, P_debiased/I_arr, np.nan)
 
 
 if __name__ == "__main__":
-    plot1 = Plot.Plot(ra,dec)
+    plot1 = Plot_updated.Plot_updated(ra,dec)
 
     plot1.set_stokes(I, Q, U)
     plot1.set_noise(noise_I, noise_Q, noise_U)
     plot1.set_beam(bmaj, bmin, bpa)
     plot1.set_band('Band 7')
 
+    plot1.sample_azimuth()
 
-    ax = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')
-    plt.show()
-
-    axI = plot1.plot_principle_frame('Stokes I', 'Jy/beam')
-    obs_angles, comp_angles, chi_error = plot1.plot_vect_radius( axI, comparison=True, principle_frame=True)
-    plt.show()
-    plot1.compare_angles(obs_angles, comp_angles, chi_error)
-
-    plt.show()
-
-    ax1 = plot1.plot(I_arr, 'Stokes I', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True,axis=True)
-    obs_angles_sky, comp_angles1,chi_error1 = plot1.plot_vect_radius( ax1, comparison=True)
-    plt.show()
-
-    #orginal comparison
-
-    plot1.compare_angles(obs_angles_sky, comp_angles1,chi_error1)
-
-    plt.show()
-    #test
-    plot1.test1(obs_angles, obs_angles_sky)
-    plot1.test2()
-    plot1.test3()
-    plot1.run_all_tests()
-
-
-    # ax2 = plot1.plot(Q_arr, 'Stokes Q', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    #plot Q in principle frame
+    # ax_Q_princ = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')
     # plt.show()
-    # ax3 = plot1.plot(U_arr, 'Stokes U', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    # ax_Q = plot1.plot_image(Q_arr, 'Stokes Q', 'Jy/beam', contour=True)
     # plt.show()
-    # ax4 = plot1.plot(P_debiased, 'Stokes P', 'Jy/beam', beam=True, contour=True, sig_levels=True, au=True)
+    # #plot u principle
+    # ax_u_princ = plot1.plot_principle_frame('Stokes U', 'Jy/beam')
     # plt.show()
-    # ax5 = plot1.plot(pf_debiased, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=True, au=True)
-    # plt.show()
-    # ax6 = plot1.plot(pf_simple, 'Polarization Fraction', '%', beam=True, contour=True, sig_levels=False)
+    # ax_U = plot1.plot_image(U_arr, 'Stokes U', 'Jy/beam',contour=True)
     # plt.show()
     #
-    # ax7 = plot1.plot_overlay(file_name_cont)
-    # plot1.plot_vect_radius(pf_debiased, ax7, comparison=False)
+    # ax_I = plot1.plot_image(I_arr, 'Stokes I', 'Jy/beam',contour=True)
+    # obs_angles_im, exp_angles_im, chi_error_im = plot1.plot_vectors(ax_I,comparison=True)
     # plt.show()
+    # #order of obs, exp, error
+    # plot1.compare_angles(obs_angles_im, exp_angles_im, chi_error_im)
+    # plt.show()
+    #
+    # ax_I_princ = plot1.plot_principle_frame('Stokes I', 'Jy/beam')
+    # obs_angles_princ, exp_angles_princ, chi_error_princ = plot1.plot_vectors(ax_I_princ,comparison=False,principle_frame=True)
+    # plt.show()
+    # plot1.compare_angles(obs_angles_princ, exp_angles_princ, chi_error_princ)
+    # plt.show()
+    #
+    #
+    # plot1.test1(obs_princ=obs_angles_princ, obs_sky=obs_angles_im)
+    # plot1.test2()
+    # plot1.test3()
+
+
+
+
+
+
