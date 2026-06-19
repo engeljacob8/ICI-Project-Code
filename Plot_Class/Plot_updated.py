@@ -179,6 +179,7 @@ class Plot_updated:
         #plot beam
         self.plot_beam(ax,self.bmaj, self.bmin, self.bpa - (self.angle_pa -self.bpa))
 
+
         ax.set_title(f'{value_name} {self.band} In Principal Frame')
 
         cbar = plt.colorbar(im)
@@ -267,9 +268,9 @@ class Plot_updated:
 
     def create_radius(self , principle=False, sample=False):
         if sample:
-            radii = np.array([1])
+            radii = np.array([.75])
         else:
-            radii = np.array([self.bmaj / 4, .75 * self.bmaj, 1.25 * self.bmaj, 1.75 * self.bmaj])
+            radii = np.array([.25* self.bmaj, .75 * self.bmaj, 1.25 * self.bmaj, 1.75 * self.bmaj])
         arc_spacing = self.bmaj / 2
 
         ra_list = []
