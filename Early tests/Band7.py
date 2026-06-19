@@ -142,7 +142,7 @@ if __name__ == "__main__":
     plot1.set_beam(bmaj, bmin, bpa)
     plot1.set_band('Band 7')
 
-    plot1.sample_azimuth()
+    plot1.function_of_radius()
 
     #plot Q in principle frame
     # ax_Q_princ = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')

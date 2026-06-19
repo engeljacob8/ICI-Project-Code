@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from astropy.io import fits
 import matplotlib.pyplot as plt
+from numpy.f2py.crackfortran import true_intent_list
 from radio_beam import Beam
 import astropy.units as u
 from scipy.interpolate import RegularGridInterpolator as rgi
@@ -266,9 +267,9 @@ class Plot_updated:
         return pa_arr, comparison_angle, chi_error
 
 
-    def create_radius(self , principle=False, sample=False):
+    def create_radius(self ,radius=None, principle=False, sample=False):
         if sample:
-            radii = np.array([.75])
+            radii = np.array([radius])
         else:
             radii = np.array([.25* self.bmaj, .75 * self.bmaj, 1.25 * self.bmaj, 1.75 * self.bmaj])
         arc_spacing = self.bmaj / 2
@@ -348,11 +349,29 @@ class Plot_updated:
 
         return  q_principle, u_principle,I_principle
 
+    def function_of_radius(self):
+        radii = np.array([.25, .5, .75, 1, 1.25, 1.5])
+        radii = radii * self.bmaj
+        radius_au = radii * 121
+        t_list = []
+        s_list = []
+
+        for r in radii:
+            t, s = self.sample_azimuth(r)
+            s_list.append(s)
+            t_list.append(t)
+
+        ax = plt.gca()
+        ax.plot(radius_au, t_list)
+        plt.show()
 
 
-    def sample_azimuth(self):
+
+
+
+    def sample_azimuth(self,radius=1):
         self.principle_frame()
-        ra_sample, dec_sample, phi = self.create_radius(principle=True, sample=True)
+        ra_sample, dec_sample, phi = self.create_radius(radius,principle=True, sample=True)
 
         eta = np.radians(90 - self.angle_pa)
 
@@ -398,6 +417,9 @@ class Plot_updated:
         u_prime = u_prime[mask_u]
         sigma_u = sigma_u[mask_u]
 
+        t, s = self.mle_joint(phi_q, q_prime,sigma_q,phi_u,u_prime,sigma_u)
+
+
 
         ax.errorbar(
             np.degrees(phi_q),
@@ -407,7 +429,7 @@ class Plot_updated:
             color='black',
             alpha=0.7
         )
-        self.plot_model_q(ax, phi_q, q_prime, sigma_q)
+        self.plot_model_q(ax, t,s)
 
         ax.set_xlabel(r' $\phi$ (deg)', fontsize=12)
         ax.set_ylabel(r"q' [%]", fontsize=12)
@@ -432,7 +454,7 @@ class Plot_updated:
             color='black',
             alpha=0.7
         )
-        self.plot_model_u(ax1, phi_u, u_prime, sigma_u)
+        self.plot_model_u(ax1, t)
 
         ax1.set_xlabel(r' $\phi$ (deg)', fontsize=12)
         ax1.set_ylabel(r"u' [%]", fontsize=12)
@@ -447,53 +469,80 @@ class Plot_updated:
 
         plt.tight_layout()
         plt.show()
+        return t, s
 
-    def plot_model_q(self,ax, phi, q_sample, sigma_q):
+    def plot_model_q(self,ax, t, s):
         theta =  np.linspace(-np.pi/2, 3* np.pi/2, 100)
         ax.axline([0,0], slope=0, color='black', linestyle='--')
-
-        t, s = self.mle_estimation_q(phi, q_sample, sigma_q)
         q_model = s + t * (np.cos(np.radians(self.angle_incl))**2 * np.sin(theta)**2 - np.cos(theta)**2)
-        print(t* 100)
-        print(s* 100)
         ax.plot(np.degrees(theta),q_model * 100, '-', color='green')
-
         ax.axline([0,s*100], slope=0, color='green', linestyle='--')
 
-
-
-    def plot_model_u(self, ax, phi, u_sample, sigma_u):
+    def plot_model_u(self, ax, t):
         theta = np.linspace(-np.pi/2, 3* np.pi/2, 100)
         ax.axline([0,0], slope=0, color='black', linestyle='--')
-
-        t = self.mle_estimation_u(phi, u_sample, sigma_u)
-        print(t * 100)
 
         u_model = -t * np.cos(np.radians(self.angle_incl)) * np.sin(2* theta)
         ax.plot(np.degrees(theta), u_model * 100, '-', color='green')
 
+    def mle_joint(self,phi_q, q_sample, sigma_q,
+                            phi_u, u_sample, sigma_u ):
+        result = minimize(
+            lambda x: -self.joint_log_likelihood(x,phi_q,q_sample,sigma_q, phi_u,u_sample,sigma_u),
+            x0=[.1,0.0])
+        t, s = result.x
 
-    def mle_estimation_q(self, phi, q_sample, sigma_q):
-        result = minimize( lambda x: -self.likelihood_function_q(x,phi,q_sample,sigma_q), x0= [.1, 0.0])
-        t , s = result.x
-        q_model = s + t * (np.cos(np.radians(self.angle_incl)) ** 2 * np.sin(phi) ** 2 - np.cos(phi) ** 2)
+        print(f' Fitted value of t = {np.round(t*100, 4)} %')
+        print(f' Fitted value of s = {np.round(s*100, 4)} %')
 
+        q_model = s + t * (np.cos(np.radians(self.angle_incl)) ** 2 * np.sin(phi_q) ** 2 - np.cos(phi_q) ** 2)
         chi2 = np.sum(((q_sample - q_model) / sigma_q) ** 2)
         p_value = stats.chi2.sf(chi2, len(q_sample))
         print(f' p_value of reduced chi^2 test for q model {p_value} ')
-        return t, s
 
-    def mle_estimation_u(self, phi, u_sample, sigma_u):
-        result = minimize(lambda x: -self.likelihood_function_u(x, phi, u_sample, sigma_u), x0=[.1])
-        t = result.x[0]
+        u_model = -t * np.cos(np.radians(self.angle_incl)) * np.sin(2 * phi_u)
 
-        u_model = -t * np.cos(np.radians(self.angle_incl)) * np.sin(2 * phi)
-
-        chi2 = np.sum(((u_sample-u_model)/sigma_u)**2)
+        chi2 = np.sum(((u_sample - u_model) / sigma_u) ** 2)
         p_value = stats.chi2.sf(chi2, len(u_sample))
         print(f' p_value of reduced chi^2 test for u model {p_value} ')
-        return t
+        return t, s
 
+
+    # def mle_estimation_q(self, phi, q_sample, sigma_q):
+    #     result = minimize( lambda x: -self.likelihood_function_q(x,phi,q_sample,sigma_q), x0= [.1, 0.0])
+    #     t , s = result.x
+    #     q_model = s + t * (np.cos(np.radians(self.angle_incl)) ** 2 * np.sin(phi) ** 2 - np.cos(phi) ** 2)
+    #
+    #     chi2 = np.sum(((q_sample - q_model) / sigma_q) ** 2)
+    #     p_value = stats.chi2.sf(chi2, len(q_sample))
+    #     print(f' p_value of reduced chi^2 test for q model {p_value} ')
+    #     return t, s
+
+    # def mle_estimation_u(self, phi, u_sample, sigma_u):
+    #     result = minimize(lambda x: -self.likelihood_function_u(x, phi, u_sample, sigma_u), x0=[.1])
+    #     t = result.x[0]
+    #
+    #     u_model = -t * np.cos(np.radians(self.angle_incl)) * np.sin(2 * phi)
+    #
+    #     chi2 = np.sum(((u_sample-u_model)/sigma_u)**2)
+    #     p_value = stats.chi2.sf(chi2, len(u_sample))
+    #     print(f' p_value of reduced chi^2 test for u model {p_value} ')
+    #     return t
+
+
+
+    def joint_log_likelihood(self, params,
+                            phi_q, q_sample, sigma_q,
+                            phi_u, u_sample, sigma_u):
+        t ,s = params
+        u_model = -t * np.cos(np.radians(self.angle_incl)) * np.sin(2 * phi_u)
+        q_model = s + t * (np.cos(np.radians(self.angle_incl)) ** 2 * np.sin(phi_q) ** 2 - np.cos(phi_q) ** 2)
+
+        likely_q = -.5 * np.sum(((q_sample-q_model)**2 / sigma_q**2) + np.log(2 * np.pi * sigma_q**2))
+
+        likely_u = -.5 * np.sum(((u_sample-u_model)**2 / sigma_u**2) + np.log(2 * np.pi * sigma_u**2))
+
+        return likely_u + likely_q
 
     def likelihood_function_u(self,params, phi, u_sample, sigma_u):
         t = params[0]

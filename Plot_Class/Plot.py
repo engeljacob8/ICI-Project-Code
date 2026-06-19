@@ -382,6 +382,7 @@ class Plot:
             vdec_im = vra_im0 * np.sin(eta) + np.cos(eta) * vdec_im0
             vra_im = -vdec_im0 * np.sin(eta) + np.cos(eta) * vra_im0
             #plt.plot(ra_im, dec_im, color='red')
+            plt.plot(ra_im,dec_im)
         return ra_im, dec_im, vra_im, vdec_im
 
 
