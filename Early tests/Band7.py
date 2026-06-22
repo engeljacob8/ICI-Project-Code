@@ -142,7 +142,12 @@ if __name__ == "__main__":
     plot1.set_beam(bmaj, bmin, bpa)
     plot1.set_band('Band 7')
 
-    plot1.function_of_radius()
+    # radius_au = 125
+    # radius = radius_au  / 121
+    # plot1.sample_azimuth(radius)
+    ax = plot1.plot_overlay('data/AS209_continuum.fits')
+    plot1.plot_vectors(ax)
+    plt.show()
 
     #plot Q in principle frame
     # ax_Q_princ = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')

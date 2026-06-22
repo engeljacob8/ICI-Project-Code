@@ -130,7 +130,10 @@ if __name__ == "__main__":
     plot1.set_beam(bmaj, bmin, bpa)
     plot1.set_band('Band 3')
 
-    plot1.sample_azimuth()
+    radius_au = 125
+    radius = radius_au / 121
+    plot1.sample_azimuth(radius)
+
     # #plot 1 principal frame
     # ax_Q_princ = plot1.plot_principle_frame('Stokes Q', 'Jy/beam')
     # plt.show()

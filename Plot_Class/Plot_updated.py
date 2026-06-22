@@ -349,27 +349,90 @@ class Plot_updated:
 
         return  q_principle, u_principle,I_principle
 
-    def function_of_radius(self):
+    def function_of_radius(self, ax, plot_t):
         radii = np.array([.25, .5, .75, 1, 1.25, 1.5])
         radii = radii * self.bmaj
         radius_au = radii * 121
         t_list = []
         s_list = []
+        s_upper = []
+        s_lower = []
+        t_upper = []
+        t_lower = []
 
         for r in radii:
-            t, s = self.sample_azimuth(r)
-            s_list.append(s)
-            t_list.append(t)
+            t, s,sigma_t_low, sigma_t_high, sigma_s_low, sigma_s_high = self.sample_azimuth(r,plot=False)
+            s_list.append(s*100)
+            s_upper.append(sigma_s_high*100)
+            s_lower.append(sigma_s_low*100)
+            t_upper.append(sigma_t_high*100)
+            t_lower.append(sigma_t_low*100)
+            t_list.append(t*100)
 
-        ax = plt.gca()
-        ax.plot(radius_au, t_list)
+        match self.band:
+            case 'Band 3':
+                color = 'green'
+            case 'Band 7':
+                color = 'blue'
+            case 'Band 6':
+                color = 'red'
+
+        y_err_t = [t_lower, t_upper]
+        y_err_s = [s_lower, s_upper]
+        if plot_t:
+            #ax.errorbar(radius_au, t_list,yerr=y_err_t, color= color, label=self.band, alpha = 0.5, fmt='-0')
+            ax.plot(radius_au, t_list, 'or', color=color, label =self.band)
+            ax.fill_between(radius_au, t_lower, t_upper,
+                            color=color, alpha=0.2)
+            ax.legend()
+            ax.set_xlabel('Radius (AU)')
+            ax.set_ylabel('t (%)')
+        else:
+            #ax.errorbar(radius_au, s_list,yerr=y_err_s, color = color, label=self.band, alpha=.5, fmt='-0')
+            ax.plot(radius_au, s_list, 'or', color=color, label = self.band)
+            ax.fill_between(radius_au, s_lower, s_upper,
+                             color=color, alpha=0.2)
+            ax.legend()
+            ax.set_xlabel('Radius (AU)')
+            ax.set_ylabel('s (%)')
+
+        return ax
+
+    def plot_spectrum(self, bands,ax):
+        wavelength = [.87, 1.33, 3.1]
+        t_list = []
+        s_list = []
+        s_lower = []
+        s_upper = []
+        t_lower = []
+        t_upper = []
+
+        radius_au = 125
+        radius = radius_au / 121
+
+
+        for band in bands:
+            t, s, sigma_t_low, sigma_t_high, sigma_s_low, sigma_s_high = band.sample_azimuth(radius,plot=False)
+            t_list.append(t*100)
+            s_list.append(s*100)
+            t_lower.append(sigma_t_low*100)
+            t_upper.append(sigma_t_high*100)
+            s_lower.append(sigma_s_low*100)
+            s_upper.append(sigma_s_high*100)
+
+        ax.plot(wavelength, t_list, 'or', color='orange', label ='t')
+        ax.fill_between(wavelength, t_lower, t_upper,
+                        color='orange', alpha=0.2)
+        ax.plot(wavelength, s_list, 'or', color='blue', label='s')
+        ax.fill_between(wavelength, s_lower, s_upper,color='blue', alpha=0.2)
+        ax.legend()
+        ax.set_title('Spectrum of s and t at 125 au')
+        ax.set_xlabel('Wavelength (mm)')
+        ax.set_ylabel('s,t [%]')
         plt.show()
 
 
-
-
-
-    def sample_azimuth(self,radius=1):
+    def sample_azimuth(self,radius=1, plot=True):
         self.principle_frame()
         ra_sample, dec_sample, phi = self.create_radius(radius,principle=True, sample=True)
 
@@ -417,9 +480,10 @@ class Plot_updated:
         u_prime = u_prime[mask_u]
         sigma_u = sigma_u[mask_u]
 
-        t, s = self.mle_joint(phi_q, q_prime,sigma_q,phi_u,u_prime,sigma_u)
+        t, s, sigma_t_low, sigma_t_high, sigma_s_low, sigma_s_high = self.mle_joint(phi_q, q_prime,sigma_q,phi_u,u_prime,sigma_u)
 
-
+        if not plot:
+            return t, s,sigma_t_low, sigma_t_high, sigma_s_low, sigma_s_high
 
         ax.errorbar(
             np.degrees(phi_q),
@@ -469,7 +533,8 @@ class Plot_updated:
 
         plt.tight_layout()
         plt.show()
-        return t, s
+
+        return t, s, sigma_t_low, sigma_t_high, sigma_s_low, sigma_s_high
 
     def plot_model_q(self,ax, t, s):
         theta =  np.linspace(-np.pi/2, 3* np.pi/2, 100)
@@ -490,22 +555,56 @@ class Plot_updated:
         result = minimize(
             lambda x: -self.joint_log_likelihood(x,phi_q,q_sample,sigma_q, phi_u,u_sample,sigma_u),
             x0=[.1,0.0])
-        t, s = result.x
+        t_best, s_best = result.x
+        likelihood_min = result.fun
 
-        print(f' Fitted value of t = {np.round(t*100, 4)} %')
-        print(f' Fitted value of s = {np.round(s*100, 4)} %')
+        #numerically find sigma for t
+        t_grid = np.linspace(0, t_best + .0025, 500)
+        profile_likelihood = []
 
-        q_model = s + t * (np.cos(np.radians(self.angle_incl)) ** 2 * np.sin(phi_q) ** 2 - np.cos(phi_q) ** 2)
+        for t in t_grid:
+            def fixed_t(s):
+                return -self.joint_log_likelihood([t, s[0]], phi_q, q_sample, sigma_q, phi_u,u_sample,sigma_u)
+            res = minimize(fixed_t, x0=[s_best])
+            profile_likelihood.append(res.fun)
+
+        #opposite since negative likelihood
+        delta_chi2 = 2 * (np.array(profile_likelihood) - likelihood_min)
+        mask = delta_chi2 <=1
+
+
+        sig_lower_t = t_grid[mask][0]
+        sig_upper_t = t_grid[mask][-1]
+
+        print(f' Fitted value of t = {np.round(t_best*100, 4)} % [{np.round(sig_lower_t*100, 4)}, {np.round(sig_upper_t*100, 4)}]')
+
+
+        #now for s
+        s_grid = np.linspace(0, s_best +.0025, 500)
+        profile_likelihood = []
+        for s in s_grid:
+            def fixed_s(t):
+                return -self.joint_log_likelihood([t[0],s], phi_q,q_sample,sigma_q, phi_u, u_sample, sigma_u)
+            res = minimize(fixed_s, x0=[t_best])
+            profile_likelihood.append(res.fun)
+        deltachi2 = 2 * (np.array(profile_likelihood) - likelihood_min)
+        mask = deltachi2 <=1
+
+        sig_lower_s = s_grid[mask][0]
+        sig_upper_s = s_grid[mask][-1]
+        print(f' Fitted value of s = {np.round(s_best * 100, 4)} % [{np.round(sig_lower_s*100, 4)}, {np.round(sig_upper_s*100, 4)}]')
+
+        q_model = s_best + t_best * (np.cos(np.radians(self.angle_incl)) ** 2 * np.sin(phi_q) ** 2 - np.cos(phi_q) ** 2)
         chi2 = np.sum(((q_sample - q_model) / sigma_q) ** 2)
-        p_value = stats.chi2.sf(chi2, len(q_sample))
+        p_value = stats.chi2.sf(chi2, len(q_sample)-2)
         print(f' p_value of reduced chi^2 test for q model {p_value} ')
 
-        u_model = -t * np.cos(np.radians(self.angle_incl)) * np.sin(2 * phi_u)
+        u_model = -t_best * np.cos(np.radians(self.angle_incl)) * np.sin(2 * phi_u)
 
         chi2 = np.sum(((u_sample - u_model) / sigma_u) ** 2)
-        p_value = stats.chi2.sf(chi2, len(u_sample))
+        p_value = stats.chi2.sf(chi2, len(u_sample)-1)
         print(f' p_value of reduced chi^2 test for u model {p_value} ')
-        return t, s
+        return t_best, s_best, sig_lower_t, sig_upper_t, sig_lower_s,sig_upper_s
 
 
     # def mle_estimation_q(self, phi, q_sample, sigma_q):
@@ -687,8 +786,8 @@ class Plot_updated:
 
         I = data[0, 0, :, :]
 
-        ax = self.plot(I, 'polarization + 1.2mm dust cont', 'Jy/beam', overlay=True, overlay_extent=extent)
-        self.plot_beam(ax, bmaj, bmin, bpa)
+        ax = self.plot_image(I, 'polarization + 1.2mm dust cont', 'Jy/beam', overlay=True, overlay_extent=extent)
+        self.plot_beam(ax, bmaj, bmin, bpa, overlay=True)
         return ax
 
     def test1(self, obs_princ, obs_sky):
